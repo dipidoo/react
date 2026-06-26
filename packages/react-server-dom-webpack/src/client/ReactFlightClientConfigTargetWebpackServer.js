@@ -12,6 +12,11 @@ import {preinitScriptForSSR} from 'react-client/src/ReactFlightClientConfig';
 export type ModuleLoading = null | {
   prefix: string,
   crossOrigin?: 'use-credentials' | '',
+  // Optional map of chunk filename -> Subresource Integrity hash. When present,
+  // React emits a matching `integrity` attribute on the <script> it
+  // preinitializes for each client-component chunk during SSR. Sourced from the
+  // bundler's SRI manifest (e.g. webpack-subresource-integrity).
+  integrity?: {+[chunkFilename: string]: string},
 };
 
 export function prepareDestinationWithChunks(
@@ -21,11 +26,14 @@ export function prepareDestinationWithChunks(
   nonce: ?string,
 ) {
   if (moduleLoading !== null) {
+    const integrityMap = moduleLoading.integrity;
     for (let i = 1; i < chunks.length; i += 2) {
+      const filename = chunks[i];
       preinitScriptForSSR(
-        moduleLoading.prefix + chunks[i],
+        moduleLoading.prefix + filename,
         nonce,
         moduleLoading.crossOrigin,
+        integrityMap != null ? integrityMap[filename] : undefined,
       );
     }
   }
